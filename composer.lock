@@ -1,0 +1,64 @@
+{
+    "_readme": [
+        "This file locks the dependencies of your project to a known state",
+        "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
+        "This file is @generated automatically"
+    ],
+    "content-hash": "fb96bd6f8e26595badf14b2eaf7fa2f3",
+    "packages": [
+        {
+            "name": "netivo/wp-core",
+            "version": "1.2",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/netivo/wp-core.git",
+                "reference": "6187fdae15362529ba13d24dd73af5f76a5e1df4"
+            },
+            "dist": {
+                "type": "tar",
+                "url": "https://packagist.netivo.pl/dist/netivo/wp-core/netivo-wp-core-6187fdae15362529ba13d24dd73af5f76a5e1df4-zip-1b8cc8.tar",
+                "reference": "6187fdae15362529ba13d24dd73af5f76a5e1df4",
+                "shasum": "5d84da7ba5fdc658f1398c38bd83e32e9e1d94f9"
+            },
+            "require": {
+                "php": ">=8.1"
+            },
+            "type": "library",
+            "autoload": {
+                "psr-4": {
+                    "Netivo\\Core\\": "src/Core"
+                }
+            },
+            "license": [
+                "proprietary"
+            ],
+            "authors": [
+                {
+                    "name": "netivo",
+                    "email": "biuro@netivo.pl"
+                },
+                {
+                    "name": "Michał Świątek",
+                    "email": "michal.swiatek@netivo.pl"
+                }
+            ],
+            "description": "WP Core Library for Netivo themes",
+            "support": {
+                "source": "https://github.com/netivo/wp-core/tree/v1.2",
+                "issues": "https://github.com/netivo/wp-core/issues"
+            },
+            "time": "2026-02-16T12:10:40+00:00"
+        }
+    ],
+    "packages-dev": [],
+    "aliases": [],
+    "minimum-stability": "dev",
+    "stability-flags": {},
+    "prefer-stable": false,
+    "prefer-lowest": false,
+    "platform": {
+        "php": ">=8.1"
+    },
+    "platform-dev": {},
+    "plugin-api-version": "2.9.0"
+}
