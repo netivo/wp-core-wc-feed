@@ -66,17 +66,22 @@ class Google extends Export {
 			unlink( ABSPATH . '/export_google.xml' );
 		}
 
+		$title    = get_option( 'nt_feed_title' . $this->name );
+		$site_url = get_option( 'nt_feed_url' );
+		$desc     = get_option( 'nt_feed_description' . $this->name );
+
 		$xml->flush(); // wyczyszczenie bufora
 
 		$xml->startDocument( '1.0', 'UTF-8' );
-		$xml->setIndent( 1 );
+		$xml->setIndent( true );
+		$xml->setIndentString( '  ' );
 		$xml->startElement( 'rss' );
 		$xml->writeAttribute( 'version', '2.0' );
 		$xml->writeAttributeNs( 'xmlns', 'g', null, 'http://base.google.com/ns/1.0' );
 		$xml->startElement( 'channel' );
-		$xml->writeElement( 'title', 'Produkty elazienki.pl' );
-		$xml->writeElement( 'link', 'http://elazienki.pl' );
-		$xml->writeElement( 'description', 'Oferta sklepu internetowego elazienki.pl' );
+		$xml->writeElement( 'title', $title );
+		$xml->writeElement( 'link', $site_url );
+		$xml->writeElement( 'description', $desc );
 
 		$export_directory = WP_CONTENT_DIR . '/uploads/integration/' . $this->name . '/';
 		for ( $i = 0; $i < $part_count; $i ++ ) {
@@ -95,6 +100,8 @@ class Google extends Export {
 	}
 
 	protected function parse_product_xml( $product, $product_id, $xml, $processed_shipping_methods ) {
+		$xml->setIndent( true );
+		$xml->setIndentString( '      ' );
 		$xml->startElement( 'item' );
 		{
 			$category = $product->get_category_ids();

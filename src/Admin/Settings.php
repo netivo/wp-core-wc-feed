@@ -29,6 +29,7 @@ class Settings {
 	 */
 	public function add_section( $sections ) {
 		$sections['export_feed'] = __( 'Ustawienia Eksportu plików feedowych', 'netivo' );
+
 		return $sections;
 	}
 
@@ -44,43 +45,37 @@ class Settings {
 		if ( 'export_feed' === $current_section ) {
 			$settings = [
 				[
-					'title' => __( 'Ustawienia pakowania na prezent', 'netivo' ),
+					'title' => __( 'Ustawienia generowania plików feed', 'netivo' ),
 					'type'  => 'title',
-					'id'    => 'present_packing_options',
+					'id'    => 'nt_feed_settings',
 				],
 				[
-					'title'    => __( 'Nazwa wyświetlana', 'netivo' ),
-					'desc'     => __( 'Nazwa widoczna dla klienta w koszyku i zamówieniu.', 'netivo' ),
-					'id'       => 'present_packing_name',
-					'default'  => __( 'Pakowanie na prezent', 'netivo' ),
+					'title'    => __( 'Tytuł', 'netivo' ),
+					'desc'     => __( 'Tytuł w dokumencie XML.', 'netivo' ),
+					'id'       => 'nt_feed_title',
+					'default'  => __( 'Produkty ' . get_bloginfo( 'name' ), 'netivo' ),
 					'type'     => 'text',
 					'desc_tip' => true,
 				],
 				[
-					'title'    => __( 'Typ ceny', 'netivo' ),
-					'id'       => 'present_packing_price_type',
-					'default'  => 'fixed',
-					'type'     => 'select',
-					'options'  => [
-						'fixed'      => __( 'Stała kwota', 'netivo' ),
-						'percentage' => __( 'Procent wartości zamówienia', 'netivo' ),
-					],
+					'title'    => __( 'Adres strony', 'netivo' ),
+					'desc'     => __( 'Adres strony w dokumencie XML.', 'netivo' ),
+					'id'       => 'nt_feed_url',
+					'default'  => __( home_url(), 'netivo' ),
+					'type'     => 'text',
 					'desc_tip' => true,
 				],
 				[
-					'title'             => __( 'Wartość ceny', 'netivo' ),
-					'id'                => 'present_packing_price_value',
-					'default'           => '0',
-					'type'              => 'number',
-					'custom_attributes' => [
-						'step' => '0.01',
-						'min'  => '0',
-					],
-					'desc_tip'          => true,
+					'title'    => __( 'Opis', 'netivo' ),
+					'desc'     => __( 'Opis w dokumencie XML.', 'netivo' ),
+					'id'       => 'nt_feed_description',
+					'default'  => __( 'Oferta sklepu internetowego ' . get_bloginfo( 'name' ), 'netivo' ),
+					'type'     => 'text',
+					'desc_tip' => true,
 				],
 				[
 					'type' => 'sectionend',
-					'id'   => 'present_packing_options',
+					'id'   => 'nt_feed_settings',
 				],
 			];
 		}
