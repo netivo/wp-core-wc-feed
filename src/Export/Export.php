@@ -1,6 +1,6 @@
 <?php
 
-namespace Netivo\Module\Woocommerce\Feed\Module\Export;
+namespace Netivo\Module\WooCommerce\Feed\Module\Export;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	header( 'HTTP/1.0 403 Forbidden' );

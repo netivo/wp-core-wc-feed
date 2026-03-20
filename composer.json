@@ -16,7 +16,7 @@
   },
   "autoload": {
     "psr-4": {
-      "Netivo\\Module\\WooCommerce\\ProductAutomation\\": "src/"
+      "Netivo\\Module\\WooCommerce\\Feed\\": "src/"
     }
   }
 }

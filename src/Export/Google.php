@@ -1,6 +1,6 @@
 <?php
 
-namespace Netivo\Module\Woocommerce\Feed\Module\Export;
+namespace Netivo\Module\WooCommerce\Feed\Module\Export;
 
 class Google extends Export {
 	protected string $name = 'google';

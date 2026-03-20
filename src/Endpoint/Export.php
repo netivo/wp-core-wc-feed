@@ -1,9 +1,9 @@
 <?php
 
-namespace Netivo\Module\Woocommerce\Feed\Module\Endpoint;
+namespace Netivo\Module\WooCommerce\Feed\Module\Endpoint;
 
 use Netivo\Core\Endpoint;
-use Netivo\Module\Woocommerce\Feed\Module\Export\Google2;
+use Netivo\Module\WooCommerce\Feed\Module\Export\Google2;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	header( 'HTTP/1.0 403 Forbidden' );
