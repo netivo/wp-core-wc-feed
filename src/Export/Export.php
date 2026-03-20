@@ -9,6 +9,7 @@ if ( ! defined( 'ABSPATH' ) ) {
 
 abstract class Export {
 	protected string $name;
+
 	public abstract function start(): void;
 
 	public abstract function proceed(): void;
@@ -30,8 +31,9 @@ abstract class Export {
 
 		$terms = [];
 
-		foreach( $ids as $id ) {
-			$terms[] = get_term_by( 'term_taxonomy_id', $id, 'product_brand' );
+		foreach ( $ids as $id ) {
+			$term    = get_term_by( 'term_taxonomy_id', $id, 'product_brand' );
+			$terms[] = $term->name;
 		}
 
 
