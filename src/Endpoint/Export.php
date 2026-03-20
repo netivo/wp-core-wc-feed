@@ -1,9 +1,9 @@
 <?php
 
-namespace Netivo\Module\WooCommerce\Feed\Module\Endpoint;
+namespace Netivo\Module\WooCommerce\Feed\Endpoint;
 
 use Netivo\Core\Endpoint;
-use Netivo\Module\WooCommerce\Feed\Module\Export\Google2;
+use Netivo\Module\WooCommerce\Feed\Export\Google;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	header( 'HTTP/1.0 403 Forbidden' );
@@ -37,8 +37,9 @@ class Export extends Endpoint {
 	public function doAction( mixed $var ): void {
 		$var_array = explode( '/', $var );
 
-		if( count( $var_array ) < 2 ) {
+		if ( count( $var_array ) < 2 ) {
 			echo 'Too few arguments.< /br>';
+
 			return;
 		}
 
@@ -48,17 +49,17 @@ class Export extends Endpoint {
 
 		switch ( $target ) {
 			case 'google':
-				$export = new Google2();
+				$export = new Google();
 				break;
-			case 'ceneo':
-				$export = new Ceneo();
-				break;
-			case 'facebook':
-				$export = new Facebook();
-				break;
+//			case 'ceneo':
+//				$export = new Ceneo();
+//				break;
+//			case 'facebook':
+//				$export = new Facebook();
+//				break;
 		}
 
-		if ( ! empty( $export ) && method_exists( $export, $action )) {
+		if ( ! empty( $export ) && method_exists( $export, $action ) ) {
 			$export->$action();
 		}
 	}

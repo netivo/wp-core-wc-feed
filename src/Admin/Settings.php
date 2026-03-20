@@ -1,6 +1,6 @@
 <?php
 
-namespace Netivo\Module\WooCommerce\Feed\Module\Admin;
+namespace Netivo\Module\WooCommerce\Feed\Admin;
 
 
 if ( ! defined( 'ABSPATH' ) ) {
