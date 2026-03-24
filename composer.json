@@ -12,7 +12,8 @@
   ],
   "require": {
     "php": ">=8.1",
-    "netivo/wp-core": "^1.1.2"
+    "netivo/wp-core": "^1.1.2",
+    "ext-xmlwriter": "*"
   },
   "autoload": {
     "psr-4": {

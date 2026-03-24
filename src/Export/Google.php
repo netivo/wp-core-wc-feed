@@ -2,6 +2,8 @@
 
 namespace Netivo\Module\WooCommerce\Feed\Export;
 
+use XMLWriter;
+
 class Google extends Export {
 	protected string $name = 'google';
 
@@ -18,8 +20,7 @@ class Google extends Export {
 		$this->prepare_parts_directory( $parts_directory );
 
 		$sql = "SELECT ID FROM {$wpdb->posts} AS posts
-          LEFT JOIN {$wpdb->postmeta} AS meta1 ON meta1.post_id = posts.ID AND meta1.meta_key = '_export_google'
-          WHERE posts.post_type='product' AND posts.post_status='publish'";
+          WHERE (posts.post_type='product' OR posts.post_type='product_variation') AND posts.post_status='publish'";
 
 		$current_export = $wpdb->get_results( $sql, ARRAY_N );
 		update_option( '_nt_export_' . $this->name, $current_export );
@@ -28,23 +29,40 @@ class Google extends Export {
 
 	public function proceed(): void {
 		$products_array = get_option( '_nt_export_' . $this->name );
-		$products       = array_slice( $products_array, 0, 1000 );
+		$part_size      = get_option( '_nt_export_part_size_' . $this->name, 1000 );
+		$products       = array_slice( $products_array, 0, $part_size, true );
 
 		$parts_directory = WP_CONTENT_DIR . '/uploads/integration/' . $this->name . '/';
 
-		$part          = get_option( '_nt_export_part_' . $this->name );
+		$part = get_option( '_nt_export_part_' . $this->name, null );
+
+		if ( null === $part ) {
+			echo 'Export already finished';
+			exit;
+		}
 		$part_filename = 'part_' . $part . '.xml';
 
-		$shipping_methods           = \WC_Shipping_Zones::get_zone( 1 )->get_shipping_methods( true );
-		$processed_shipping_methods = $this->process_shipping_methods( $shipping_methods );
-
-		$xml = new \XMLWriter();
+		$xml = new XMLWriter();
 		$xml->openMemory();
 
+		echo 'Exporting part ' . $part . '<br />';
+
+		$excluded_product_ids = apply_filters( 'netivo/woocommerce/feed/excluded_product_ids', [] );
+
 		foreach ( $products as $index => $product_id ) {
+			if ( in_array( $product_id[0], $excluded_product_ids ) ) {
+				unset( $products_array[ $index ] );
+				continue;
+			}
+
 			$product = wc_get_product( $product_id[0] );
 
-			$this->parse_product_xml( $product, $product_id[0], $xml, $processed_shipping_methods );
+			if ( $product->get_type() === 'variable' ) {
+				unset( $products_array[ $index ] );
+				continue;
+			}
+
+			$this->parse_product_xml( $product, $product_id[0], $xml );
 
 			unset( $products_array[ $index ] );
 		}
@@ -55,6 +73,7 @@ class Google extends Export {
 		}
 
 		if ( empty( $products_array ) ) {
+			echo 'Export finished';
 			$this->finish( $xml, $part + 1 );
 		}
 
@@ -95,17 +114,52 @@ class Google extends Export {
 
 		file_put_contents( ABSPATH . '/export_google.xml', $xml->flush() );
 
-		delete_option( '_nt_export_google' );
-		delete_option( '_nt_export_google_part' );
+		delete_option( '_nt_export_' . $this->name );
+		delete_option( '_nt_export_part_' . $this->name );
 	}
 
-	protected function parse_product_xml( $product, $product_id, $xml, $processed_shipping_methods ) {
+	protected function parse_product_xml( $product, $product_id, $xml ) {
+		$product_type = $product->get_type();
+		$is_variation = ( $product_type === 'variation' );
+
+		$image_link   = wp_get_attachment_image_url( $product->get_image_id(), 'full' );
+		$description  = htmlspecialchars( $product->get_description(), ENT_XML1 );
+		$product_link = get_permalink( $product_id );
+
+		$category = $product->get_category_ids();
+		if ( ! empty( $category ) ) {
+			$category = get_term( $category[0] );
+		} else {
+			$category = '';
+		}
+		$brand_ids = $product->get_brand_ids();
+		$brands    = $this->get_brand_array_by_id( $brand_ids );
+
+		if ( $is_variation ) {
+			$parent_id = $product->get_parent_id();
+			$parent    = wc_get_product( $parent_id );
+
+			$product_link = get_permalink( $parent_id );
+
+			$category = $parent->get_category_ids();
+			$category = get_term( $category[0] );
+
+			$brand_ids = $parent->get_brand_ids();
+			$brands    = $this->get_brand_array_by_id( $brand_ids );
+
+			if ( empty( $image_link ) ) {
+				$image_link = wp_get_attachment_image_url( $parent->get_image_id(), 'full' );
+			}
+
+			if ( empty( $description ) ) {
+				$description = htmlspecialchars( $parent->get_description(), ENT_XML1 );
+			}
+		}
+
 		$xml->setIndent( true );
 		$xml->setIndentString( '      ' );
 		$xml->startElement( 'item' );
 		{
-			$category = $product->get_category_ids();
-			$category = get_term( $category[0] );
 
 			$xml->writeElementNs( 'g', 'id', null, $product_id );
 
@@ -115,20 +169,31 @@ class Google extends Export {
 			}
 			$xml->endElement();
 
-			$xml->writeElement( 'link', get_permalink( $product_id ) );
+			$xml->writeElement( 'link', $product_link );
 
 
 			$xml->startElement( 'description' );
 			{
-				$xml->writeCdata( htmlspecialchars( $product->get_description(), ENT_XML1 ) );
+				$xml->writeCdata( $description );
 			}
 			$xml->endElement();
 
-			$xml->writeElementNs( 'g', 'price', null, ( ( $product->get_type() === 'package' ) ? $product->get_regular_price() : $product->get_regular_price( 'normal' ) ) . ' PLN' );
-			if ( $product->is_on_sale() ) {
-				$xml->writeElementNs( 'g', 'sale_price', null, ( ( $product->get_type() === 'package' ) ? round( (float) $product->get_sale_price(), 2 ) : round( (float) $product->get_sale_price( 'normal' ), 2 ) ) . ' PLN' );
+			$product_price      = ( $product_type === 'package' ) ? $product->get_regular_price() : $product->get_regular_price( 'normal' );
+			$product_sale_price = ( $product_type === 'package' ) ? round( (float) $product->get_sale_price(), 2 ) : round( (float) $product->get_sale_price( 'normal' ), 2 );
+
+			if ( ! empty( $product_price ) ) {
+				$product_price = sprintf( '%.02f PLN', $product_price );
 			}
-			if ( $product->get_type() == 'meters' ) {
+
+			if ( ! empty( $product_sale_price ) ) {
+				$product_sale_price = sprintf( '%.02f PLN', $product_sale_price );
+			}
+
+			$xml->writeElementNs( 'g', 'price', null, $product_price );
+			if ( $product->is_on_sale() ) {
+				$xml->writeElementNs( 'g', 'sale_price', null, $product_sale_price );
+			}
+			if ( $product_type == 'meters' ) {
 				$mib = $product->get_meta( '_meters_in_box' );
 				if ( ! empty( $mib ) ) {
 					$xml->writeElementNs( 'g', 'unit_pricing_measure', null, '1sqm' );
@@ -136,15 +201,13 @@ class Google extends Export {
 				}
 			}
 
-			$xml->writeElementNs( 'g', 'image_link', null, wp_get_attachment_image_url( $product->get_image_id(), 'full' ) );
+
+			$xml->writeElementNs( 'g', 'image_link', null, $image_link );
 
 			$xml->writeElementNs( 'g', 'availability', null, ( $product->get_stock_quantity() > 0 ) ? 'in stock' : 'out of stock' );
 
 			$ean = $product->get_global_unique_id();
 			$xml->writeElementNs( 'g', 'gtin', null, $ean );
-
-			$brand_ids = $product->get_brand_ids();
-			$brands    = $this->get_brand_array_by_id( $brand_ids );
 
 			$xml->startElementNs( 'g', 'brand', null );
 			{
@@ -165,59 +228,10 @@ class Google extends Export {
 			}
 			$xml->endElement();
 
-			$weight = (float) $product->get_weight();
-			$costs  = [];
+			$product_real_price = ( $product_sale_price > 0 ) ? $product_sale_price : $product_price;
 
-			foreach ( $processed_shipping_methods as $method ) {
-				$shipping_cost = null;
-				if ( $method['type'] === 'table_rate' ) {
-					$shipping_method_instance = $method['instance'];
-					if ( method_exists( $shipping_method_instance, 'calculate_shipping' ) ) {
-						$package = [
-							'contents'      => [
-								[
-									'data'     => $product,
-									'quantity' => 1,
-								]
-							],
-							'destination'   => [
-								'country' => 'PL',
-							],
-							'contents_cost' => $product->get_price(),
-						];
+			$costs = $this->calculate_shipping_costs( $product, $product_real_price );
 
-						$shipping_method_instance->rates = [];
-						$shipping_method_instance->calculate_shipping( $package );
-
-						if ( ! empty( $shipping_method_instance->rates ) ) {
-							$rate          = reset( $shipping_method_instance->rates );
-							$shipping_cost = $rate->cost;
-						}
-					}
-
-					if ( $shipping_cost === null ) {
-						foreach ( $method['rules'] as $rule ) {
-							$min = ( ! empty( $rule['min'] ) ) ? (float) $rule['min'] : null;
-							$max = ( ! empty( $rule['max'] ) ) ? (float) $rule['max'] : null;
-							if ( empty( $min ) ) {
-								$min = ( ! empty( $rule['conditions'][0]['min'] ) ) ? (float) $rule['conditions'][0]['min'] : null;
-							}
-							if ( empty( $max ) ) {
-								$max = ( ! empty( $rule['conditions'][0]['max'] ) ) ? (float) $rule['conditions'][0]['max'] : null;
-							}
-							if ( ( $min === null && $max === null ) || ( $min === null && $weight <= $max ) || ( $max === null && $weight >= $min ) || ( $weight >= $min && $weight <= $max ) ) {
-								$shipping_cost = $rule['cost_per_order'];
-								break;
-							}
-						}
-					}
-					if ( $shipping_cost !== null ) {
-						$costs[ $method['title'] ] = $shipping_cost;
-					}
-				} else {
-					$costs[ $method['title'] ] = $method['constant_cost'];
-				}
-			}
 			if ( ! empty( $costs ) ) {
 				$min     = min( $costs );
 				$service = array_keys( $costs, $min );
@@ -234,41 +248,6 @@ class Google extends Export {
 			}
 		}
 		$xml->endElement();
-	}
-
-	protected function process_shipping_methods( $shipping_methods ): array {
-		$processed_shipping_methods = [];
-
-		$excluded_shipping_methods = apply_filters( '_nt_export_excluded_shipping_' . $this->name, [] );
-
-		foreach ( $shipping_methods as $method ) {
-			if ( in_array( $method->id, $excluded_shipping_methods ) || str_contains( $method->get_title(), 'Paczkomat InPost' ) ) {
-				continue;
-			}
-
-			$processed_method = [
-				'id'            => $method->id,
-				'title'         => $method->get_title(),
-				'instance'      => $method,
-				'type'          => 'standard',
-				'rules'         => [],
-				'constant_cost' => null,
-			];
-
-			if ( class_exists( '\WPDesk\FS\TableRate\ShippingMethodSingle' ) && is_a( $method, \WPDesk\FS\TableRate\ShippingMethodSingle::class ) ) {
-				$rules = $method->get_instance_option( 'method_rules', [] );
-				if ( ! empty( $rules ) ) {
-					$processed_method['type']  = 'table_rate';
-					$processed_method['rules'] = $rules;
-				}
-			} else {
-				$processed_method['constant_cost'] = (float) $method->get_instance_option( 'cost', 0 );
-			}
-
-			$processed_shipping_methods[] = $processed_method;
-		}
-
-		return $processed_shipping_methods;
 	}
 
 	protected function prepare_parts_directory( $parts_directory ): void {
