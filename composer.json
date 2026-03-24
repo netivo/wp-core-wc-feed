@@ -3,7 +3,7 @@
   "description": "WooCommerce Export Feed for WordPress",
   "minimum-stability": "stable",
   "license": "proprietary",
-  "version": "1.0.3",
+  "version": "1.0.4",
   "repositories": [
     {
       "type": "composer",
