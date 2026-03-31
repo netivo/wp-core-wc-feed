@@ -28,6 +28,7 @@ class Google extends Export {
 	}
 
 	public function proceed(): void {
+		ini_set( 'memory_limit', '1000M' );
 		$products_array = get_option( '_nt_export_' . $this->name );
 		$part_size      = get_option( '_nt_export_part_size_' . $this->name, 1000 );
 		$products       = array_slice( $products_array, 0, $part_size, true );
@@ -85,9 +86,9 @@ class Google extends Export {
 			unlink( ABSPATH . '/export_google.xml' );
 		}
 
-		$title    = get_option( 'nt_feed_title' . $this->name );
+		$title    = get_option( 'nt_feed_title' );
 		$site_url = get_option( 'nt_feed_url' );
-		$desc     = get_option( 'nt_feed_description' . $this->name );
+		$desc     = get_option( 'nt_feed_description' );
 
 		$xml->flush(); // wyczyszczenie bufora
 
@@ -138,6 +139,12 @@ class Google extends Export {
 		if ( $is_variation ) {
 			$parent_id = $product->get_parent_id();
 			$parent    = wc_get_product( $parent_id );
+
+			$parent_status = $parent->get_status();
+
+			if ( $parent_status !== 'publish' ) {
+				return;
+			}
 
 			$product_link = get_permalink( $parent_id );
 
