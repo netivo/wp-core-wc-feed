@@ -7,80 +7,6 @@ use XMLWriter;
 class Google extends Export {
 	protected string $name = 'google';
 
-	public function start(): void {
-		global $wpdb;
-		$current_export = get_option( '_nt_export_' . $this->name );
-
-		if ( ! empty( $current_export ) ) {
-			echo 'Export already started <br />';
-			exit;
-		}
-
-		$parts_directory = WP_CONTENT_DIR . '/uploads/integration/' . $this->name . '/';
-		$this->prepare_parts_directory( $parts_directory );
-
-		$sql = "SELECT ID FROM {$wpdb->posts} AS posts
-          WHERE (posts.post_type='product' OR posts.post_type='product_variation') AND posts.post_status='publish'";
-
-		$current_export = $wpdb->get_results( $sql, ARRAY_N );
-		update_option( '_nt_export_' . $this->name, $current_export );
-		update_option( '_nt_export_part_' . $this->name, 0 );
-	}
-
-	public function proceed(): void {
-		ini_set( 'memory_limit', '1000M' );
-		$products_array = get_option( '_nt_export_' . $this->name );
-		$part_size      = get_option( '_nt_export_part_size_' . $this->name, 1000 );
-		$products       = array_slice( $products_array, 0, $part_size, true );
-
-		$parts_directory = WP_CONTENT_DIR . '/uploads/integration/' . $this->name . '/';
-
-		$part = get_option( '_nt_export_part_' . $this->name, null );
-
-		if ( null === $part ) {
-			echo 'Export already finished';
-			exit;
-		}
-		$part_filename = 'part_' . $part . '.xml';
-
-		$xml = new XMLWriter();
-		$xml->openMemory();
-
-		echo 'Exporting part ' . $part . '<br />';
-
-		$excluded_product_ids = apply_filters( 'netivo/woocommerce/feed/excluded_product_ids', [] );
-
-		foreach ( $products as $index => $product_id ) {
-			if ( in_array( $product_id[0], $excluded_product_ids ) ) {
-				unset( $products_array[ $index ] );
-				continue;
-			}
-
-			$product = wc_get_product( $product_id[0] );
-
-			if ( $product->get_type() === 'variable' ) {
-				unset( $products_array[ $index ] );
-				continue;
-			}
-
-			$this->parse_product_xml( $product, $product_id[0], $xml );
-
-			unset( $products_array[ $index ] );
-		}
-
-		$file_put_success = file_put_contents( $parts_directory . $part_filename, $xml->flush( true ) );
-		if ( $file_put_success ) {
-			update_option( '_nt_export_part_' . $this->name, $part + 1 );
-		}
-
-		if ( empty( $products_array ) ) {
-			echo 'Export finished';
-			$this->finish( $xml, $part + 1 );
-		}
-
-		update_option( '_nt_export_' . $this->name, $products_array );
-	}
-
 	protected function finish( $xml, $part_count ): void {
 		if ( file_exists( ABSPATH . '/export_google.xml' ) ) {
 			unlink( ABSPATH . '/export_google.xml' );
@@ -119,7 +45,8 @@ class Google extends Export {
 		delete_option( '_nt_export_part_' . $this->name );
 	}
 
-	protected function parse_product_xml( $product, $product_id, $xml ) {
+	//TODO: Add method to retrieve shared product data and move it to abstract class
+	protected function parse_product_xml( $product, $product_id, XMLWriter $xml ): void {
 		$product_type = $product->get_type();
 		$is_variation = ( $product_type === 'variation' );
 
@@ -255,19 +182,5 @@ class Google extends Export {
 			}
 		}
 		$xml->endElement();
-	}
-
-	protected function prepare_parts_directory( $parts_directory ): void {
-		if ( ! is_dir( $parts_directory ) ) {
-			mkdir( $parts_directory, 0777, true );
-		}
-
-		$files = array_diff( scandir( $parts_directory ), [ '.', '..' ] );
-
-		if ( ! empty( $files ) ) {
-			foreach ( $files as $file ) {
-				unlink( $parts_directory . $file );
-			}
-		}
 	}
 }
