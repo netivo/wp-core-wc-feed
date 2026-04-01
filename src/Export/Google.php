@@ -47,7 +47,7 @@ class Google extends Export {
 
 	protected function parse_product_xml( $product, $product_id, XMLWriter $xml ): void {
 		$product_data = $this->get_data_for_product( $product, $product_id );
-		
+
 		if ( empty( $product_data['id'] ) ) {
 			return;
 		}
@@ -97,13 +97,13 @@ class Google extends Export {
 
 			$xml->writeElementNs( 'g', 'image_link', null, $product_data['image_link'] );
 
-			$xml->writeElementNs( 'g', 'availability', null, ( $product->get_stock_quantity() > 0 ) ? 'in stock' : 'out of stock' );
+			$xml->writeElementNs( 'g', 'availability', null, $product_data['availability'] );
 
 			$xml->writeElementNs( 'g', 'gtin', null, $product_data['ean'] );
 
 			$xml->startElementNs( 'g', 'brand', null );
 			{
-				$xml->writeCdata( str_replace( '&', '&amp;', implode( ',', $product_data['brands'] ) ) );
+				$xml->writeCdata( str_replace( '&', '&amp;', $product_data['brands'] ) );
 			}
 			$xml->endElement();
 

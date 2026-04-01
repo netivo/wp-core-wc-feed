@@ -117,6 +117,7 @@ abstract class Export {
 		return $terms;
 	}
 
+	//TODO: Add filters
 	protected function get_data_for_product( WC_Product $product, string|int $product_id ): array {
 		$product_type = $product->get_type();
 		$is_variation = ( $product_type === 'variation' );

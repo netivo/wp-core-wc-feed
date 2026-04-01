@@ -4,6 +4,7 @@ namespace Netivo\Module\WooCommerce\Feed\Endpoint;
 
 use Netivo\Core\Endpoint;
 use Netivo\Module\WooCommerce\Feed\Export\Google;
+use Netivo\Module\WooCommerce\Feed\Export\Facebook;
 
 if ( ! defined( 'ABSPATH' ) ) {
 	header( 'HTTP/1.0 403 Forbidden' );
@@ -54,9 +55,9 @@ class Export extends Endpoint {
 //			case 'ceneo':
 //				$export = new Ceneo();
 //				break;
-//			case 'facebook':
-//				$export = new Facebook();
-//				break;
+			case 'facebook':
+				$export = new Facebook();
+				break;
 		}
 
 		if ( ! empty( $export ) && method_exists( $export, $action ) ) {
