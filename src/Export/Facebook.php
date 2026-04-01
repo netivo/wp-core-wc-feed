@@ -11,6 +11,10 @@ class Facebook extends Export {
 	protected function parse_product_xml( WC_Product $product, string|int $product_id, XMLWriter $xml ): void {
 		$product_data = $this->get_data_for_product( $product, $product_id );
 
+		if ( empty( $product_data['id'] ) ) {
+			return;
+		}
+
 		$xml->setIndent( true );
 		$xml->setIndentString( '      ' );
 		$xml->startElement( 'item' );
@@ -50,7 +54,7 @@ class Facebook extends Export {
 
 			$xml->startElementNs( 'g', 'brand', null );
 			{
-				$xml->writeCdata( implode( ',', $product_data['brands'] ) );
+				$xml->writeCdata( $product_data['brands'] );
 			}
 			$xml->endElement();
 
@@ -74,8 +78,8 @@ class Facebook extends Export {
 				}
 				$xml->endElement();
 			}
-
 		}
+		$xml->endElement();
 	}
 
 	protected function finish( XMLWriter $xml, string|int $part_count ): void {

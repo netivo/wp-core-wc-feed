@@ -45,49 +45,11 @@ class Google extends Export {
 		delete_option( '_nt_export_part_' . $this->name );
 	}
 
-	//TODO: Add method to retrieve shared product data and move it to abstract class
 	protected function parse_product_xml( $product, $product_id, XMLWriter $xml ): void {
-		$product_type = $product->get_type();
-		$is_variation = ( $product_type === 'variation' );
-
-		$image_link   = wp_get_attachment_image_url( $product->get_image_id(), 'full' );
-		$description  = htmlspecialchars( $product->get_description(), ENT_XML1 );
-		$product_link = get_permalink( $product_id );
-
-		$category = $product->get_category_ids();
-		if ( ! empty( $category ) ) {
-			$category = get_term( $category[0] );
-		} else {
-			$category = '';
-		}
-		$brand_ids = $product->get_brand_ids();
-		$brands    = $this->get_brand_array_by_id( $brand_ids );
-
-		if ( $is_variation ) {
-			$parent_id = $product->get_parent_id();
-			$parent    = wc_get_product( $parent_id );
-
-			$parent_status = $parent->get_status();
-
-			if ( $parent_status !== 'publish' ) {
-				return;
-			}
-
-			$product_link = get_permalink( $parent_id );
-
-			$category = $parent->get_category_ids();
-			$category = get_term( $category[0] );
-
-			$brand_ids = $parent->get_brand_ids();
-			$brands    = $this->get_brand_array_by_id( $brand_ids );
-
-			if ( empty( $image_link ) ) {
-				$image_link = wp_get_attachment_image_url( $parent->get_image_id(), 'full' );
-			}
-
-			if ( empty( $description ) ) {
-				$description = htmlspecialchars( $parent->get_description(), ENT_XML1 );
-			}
+		$product_data = $this->get_data_for_product( $product, $product_id );
+		
+		if ( empty( $product_data['id'] ) ) {
+			return;
 		}
 
 		$xml->setIndent( true );
@@ -95,39 +57,36 @@ class Google extends Export {
 		$xml->startElement( 'item' );
 		{
 
-			$xml->writeElementNs( 'g', 'id', null, $product_id );
+			$xml->writeElementNs( 'g', 'id', null, $product_data['id'] );
 
 			$xml->startElement( 'title' );
 			{
-				$xml->writeCdata( str_replace( '&', '&amp;', $product->get_name() ) );
+				$xml->writeCdata( str_replace( '&', '&amp;', $product_data['name'] ) );
 			}
 			$xml->endElement();
 
-			$xml->writeElement( 'link', $product_link );
+			$xml->writeElement( 'link', $product_data['link'] );
 
 
 			$xml->startElement( 'description' );
 			{
-				$xml->writeCdata( $description );
+				$xml->writeCdata( $product_data['description'] );
 			}
 			$xml->endElement();
 
-			$product_price      = ( $product_type === 'package' ) ? $product->get_regular_price() : $product->get_regular_price( 'normal' );
-			$product_sale_price = ( $product_type === 'package' ) ? round( (float) $product->get_sale_price(), 2 ) : round( (float) $product->get_sale_price( 'normal' ), 2 );
-
-			if ( ! empty( $product_price ) ) {
-				$product_price = sprintf( '%.02f PLN', $product_price );
+			if ( ! empty( $product_data['price'] ) ) {
+				$product_data['price'] = sprintf( '%.02f PLN', $product_data['price'] );
 			}
 
-			if ( ! empty( $product_sale_price ) ) {
-				$product_sale_price = sprintf( '%.02f PLN', $product_sale_price );
+			if ( ! empty( $product_data['sale_price'] ) ) {
+				$product_data['sale_price'] = sprintf( '%.02f PLN', $product_data['sale_price'] );
 			}
 
-			$xml->writeElementNs( 'g', 'price', null, $product_price );
+			$xml->writeElementNs( 'g', 'price', null, $product_data['price'] );
 			if ( $product->is_on_sale() ) {
-				$xml->writeElementNs( 'g', 'sale_price', null, $product_sale_price );
+				$xml->writeElementNs( 'g', 'sale_price', null, $product_data['sale_price'] );
 			}
-			if ( $product_type == 'meters' ) {
+			if ( $product_data['type'] == 'meters' ) {
 				$mib = $product->get_meta( '_meters_in_box' );
 				if ( ! empty( $mib ) ) {
 					$xml->writeElementNs( 'g', 'unit_pricing_measure', null, '1sqm' );
@@ -136,16 +95,15 @@ class Google extends Export {
 			}
 
 
-			$xml->writeElementNs( 'g', 'image_link', null, $image_link );
+			$xml->writeElementNs( 'g', 'image_link', null, $product_data['image_link'] );
 
 			$xml->writeElementNs( 'g', 'availability', null, ( $product->get_stock_quantity() > 0 ) ? 'in stock' : 'out of stock' );
 
-			$ean = $product->get_global_unique_id();
-			$xml->writeElementNs( 'g', 'gtin', null, $ean );
+			$xml->writeElementNs( 'g', 'gtin', null, $product_data['ean'] );
 
 			$xml->startElementNs( 'g', 'brand', null );
 			{
-				$xml->writeCdata( str_replace( '&', '&amp;', implode( ',', $brands ) ) );
+				$xml->writeCdata( str_replace( '&', '&amp;', implode( ',', $product_data['brands'] ) ) );
 			}
 			$xml->endElement();
 
@@ -158,17 +116,13 @@ class Google extends Export {
 
 			$xml->startElementNs( 'g', 'product_type', null );
 			{
-				$xml->writeCdata( str_replace( '&', '&amp;', $category->name ) );
+				$xml->writeCdata( str_replace( '&', '&amp;', $product_data['category'] ) );
 			}
 			$xml->endElement();
 
-			$product_real_price = ( $product_sale_price > 0 ) ? $product_sale_price : $product_price;
-
-			$costs = $this->calculate_shipping_costs( $product, $product_real_price );
-
-			if ( ! empty( $costs ) ) {
-				$min     = min( $costs );
-				$service = array_keys( $costs, $min );
+			if ( ! empty( $product_data['costs'] ) ) {
+				$min     = min( $product_data['costs'] );
+				$service = array_keys( $product_data['costs'], $min );
 				if ( is_array( $service ) ) {
 					$service = $service[0];
 				}

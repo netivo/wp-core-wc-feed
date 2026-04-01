@@ -130,7 +130,7 @@ abstract class Export {
 		$product_price      = ( $product_type === 'package' ) ? $product->get_regular_price() : $product->get_regular_price( 'normal' );
 		$product_sale_price = ( $product_type === 'package' ) ? round( (float) $product->get_sale_price(), 2 ) : round( (float) $product->get_sale_price( 'normal' ), 2 );
 
-		$availability = ( $product->get_stock_quantity() > 0 ) ? 'in stock' : 'out of stock';
+		$availability = ( $product->is_purchasable() > 0 ) ? 'in stock' : 'out of stock';
 
 		$image_link = wp_get_attachment_image_url( $product->get_image_id(), 'full' );
 		$gallery    = [];
@@ -185,6 +185,12 @@ abstract class Export {
 			}
 		}
 
+		if ( $brands ) {
+			$brands = implode( ', ', $brands );
+		} else {
+			$brands = '';
+		}
+
 		return [
 			'id'           => $product_id,
 			'sku'          => $sku,
@@ -192,7 +198,7 @@ abstract class Export {
 			'type'         => $product_type,
 			'name'         => $product_name,
 			'description'  => $description,
-			'category'     => $category,
+			'category'     => $category->name,
 			'brands'       => $brands,
 			'link'         => $product_link,
 			'price'        => $product_price,
