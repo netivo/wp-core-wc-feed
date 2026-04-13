@@ -37,7 +37,7 @@ class Facebook extends Export {
 
 			$xml->startElementNs( 'g', 'rich_text_description', null );
 			{
-				$xml->writeCdata( $product_data['description'] );
+				$xml->writeCdata( $product_data['rich_description'] );
 			}
 			$xml->endElement();
 

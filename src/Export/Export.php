@@ -36,8 +36,14 @@ abstract class Export {
 	public function proceed(): void {
 		ini_set( 'memory_limit', '1000M' );
 		$products_array = get_option( '_nt_export_' . $this->name );
-		$part_size      = get_option( '_nt_export_part_size_' . $this->name, 1000 );
-		$products       = array_slice( $products_array, 0, $part_size, true );
+
+		if ( ! is_array( $products_array ) || empty( $products_array ) ) {
+			echo 'Export finished';
+			exit;
+		}
+
+		$part_size = get_option( '_nt_export_part_size_' . $this->name, 500 );
+		$products  = array_slice( $products_array, 0, $part_size, true );
 
 		$parts_directory = WP_CONTENT_DIR . '/uploads/integration/' . $this->name . '/';
 
@@ -64,7 +70,7 @@ abstract class Export {
 
 			$product = wc_get_product( $product_id[0] );
 
-			if ( $product->get_type() === 'variable' ) {
+			if ( $product->get_type() === 'variable' || $product->get_type() === 'request' ) {
 				unset( $products_array[ $index ] );
 				continue;
 			}
@@ -82,6 +88,8 @@ abstract class Export {
 		if ( empty( $products_array ) ) {
 			echo 'Export finished';
 			$this->finish( $xml, $part + 1 );
+
+			exit;
 		}
 
 		update_option( '_nt_export_' . $this->name, $products_array );
@@ -122,16 +130,17 @@ abstract class Export {
 		$product_type = $product->get_type();
 		$is_variation = ( $product_type === 'variation' );
 
-		$sku          = $product->get_sku();
-		$ean          = $product->get_global_unique_id();
-		$product_name = $product->get_name();
-		$description  = htmlspecialchars( $product->get_description(), ENT_XML1 );
-		$product_link = get_permalink( $product_id );
+		$sku              = $product->get_sku();
+		$ean              = $product->get_global_unique_id();
+		$product_name     = $product->get_name();
+		$description      = $product->get_description();
+		$rich_description = htmlspecialchars( $product->get_description(), ENT_XML1 );
+		$product_link     = get_permalink( $product_id );
 
 		$product_price      = ( $product_type === 'package' ) ? $product->get_regular_price() : $product->get_regular_price( 'normal' );
 		$product_sale_price = ( $product_type === 'package' ) ? round( (float) $product->get_sale_price(), 2 ) : round( (float) $product->get_sale_price( 'normal' ), 2 );
 
-		$availability = ( $product->is_purchasable() > 0 ) ? 'in stock' : 'out of stock';
+		$availability = ( $product->is_purchasable() ) ? 'in stock' : 'out of stock';
 
 		$image_link = wp_get_attachment_image_url( $product->get_image_id(), 'full' );
 		$gallery    = [];
@@ -182,7 +191,8 @@ abstract class Export {
 			}
 
 			if ( empty( $description ) ) {
-				$description = htmlspecialchars( $parent->get_description(), ENT_XML1 );
+				$description      = $parent->get_description();
+				$rich_description = htmlspecialchars( $parent->get_description(), ENT_XML1 );
 			}
 		}
 
@@ -192,24 +202,25 @@ abstract class Export {
 			$brands = '';
 		}
 
-		return [
-			'id'           => $product_id,
-			'sku'          => $sku,
-			'ean'          => $ean,
-			'type'         => $product_type,
-			'name'         => $product_name,
-			'description'  => $description,
-			'category'     => $category->name,
-			'brands'       => $brands,
-			'link'         => $product_link,
-			'price'        => $product_price,
-			'sale_price'   => $product_sale_price,
-			'real_price'   => $product_real_price,
-			'availability' => $availability,
-			'image_link'   => $image_link,
-			'gallery'      => $gallery,
-			'costs'        => $costs,
-		];
+		return apply_filters( 'netivo/woocommerce/feed/product_data', [
+			'id'               => $product_id,
+			'sku'              => $sku,
+			'ean'              => $ean,
+			'type'             => $product_type,
+			'name'             => $product_name,
+			'description'      => $description,
+			'rich_description' => $rich_description,
+			'category'         => $category->name,
+			'brands'           => $brands,
+			'link'             => $product_link,
+			'price'            => $product_price,
+			'sale_price'       => $product_sale_price,
+			'real_price'       => $product_real_price,
+			'availability'     => $availability,
+			'image_link'       => $image_link,
+			'gallery'          => $gallery,
+			'costs'            => $costs,
+		], $product, $product_id );
 	}
 
 	protected function prepare_parts_directory( $parts_directory ): void {

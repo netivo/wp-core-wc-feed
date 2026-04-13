@@ -70,7 +70,7 @@ class Google extends Export {
 
 			$xml->startElement( 'description' );
 			{
-				$xml->writeCdata( $product_data['description'] );
+				$xml->writeCdata( $product_data['rich_description'] );
 			}
 			$xml->endElement();
 
