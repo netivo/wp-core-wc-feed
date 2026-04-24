@@ -15,6 +15,8 @@ class Facebook extends Export {
 			return;
 		}
 
+		$condition = $product_data['condition'];
+
 		$xml->setIndent( true );
 		$xml->setIndentString( '      ' );
 		$xml->startElement( 'item' );
@@ -48,7 +50,10 @@ class Facebook extends Export {
 				$xml->writeElementNs( 'g', 'additional_image_link', null, implode( ',', $product_data['gallery'] ) );
 			}
 
-			//$xml->writeElementNs( 'g', 'condition', null, 'new' ); czy na pewno?
+			if ( ! empty( $condition ) ) {
+				$xml->writeElementNs( 'g', 'condition', null, $condition );
+			}
+
 			$xml->writeElementNs( 'g', 'availability', null, $product_data['availability'] );
 			$xml->writeElementNs( 'g', 'gtin', null, $product_data['ean'] );
 
