@@ -15,6 +15,12 @@ abstract class Export {
 
 	public function start(): void {
 		global $wpdb;
+		$enabled_exports = get_option( 'nt_feed_enabled_types' );
+		if ( ! in_array( $this->name, $enabled_exports ) ) {
+			echo 'Export not enabled <br />';
+			exit;
+		}
+
 		$current_export = get_option( '_nt_export_' . $this->name );
 
 		if ( ! empty( $current_export ) ) {

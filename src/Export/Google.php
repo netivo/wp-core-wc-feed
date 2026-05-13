@@ -8,13 +8,13 @@ class Google extends Export {
 	protected string $name = 'google';
 
 	protected function finish( $xml, $part_count ): void {
-		if ( file_exists( ABSPATH . '/export_google.xml' ) ) {
-			unlink( ABSPATH . '/export_google.xml' );
+		if ( file_exists( ABSPATH . "/export_$this->name.xml" ) ) {
+			unlink( ABSPATH . "/export_$this->name.xml" );
 		}
 
-		$title    = get_option( 'nt_feed_title' );
-		$site_url = get_option( 'nt_feed_url' );
-		$desc     = get_option( 'nt_feed_description' );
+		$title    = get_option( "nt_feed_title_$this->name" );
+		$site_url = get_option( "nt_feed_url_$this->name" );
+		$desc     = get_option( "nt_feed_description_$this->name" );
 
 		$xml->flush(); // wyczyszczenie bufora
 
@@ -39,7 +39,7 @@ class Google extends Export {
 		$xml->endElement();
 		$xml->endDocument();
 
-		file_put_contents( ABSPATH . '/export_google.xml', $xml->flush() );
+		file_put_contents( ABSPATH . "/export_$this->name.xml", $xml->flush() );
 
 		delete_option( '_nt_export_' . $this->name );
 		delete_option( '_nt_export_part_' . $this->name );

@@ -88,13 +88,13 @@ class Facebook extends Export {
 	}
 
 	protected function finish( XMLWriter $xml, string|int $part_count ): void {
-		if ( file_exists( ABSPATH . '/export_facebook.xml' ) ) {
-			unlink( ABSPATH . '/export_facebook.xml' );
+		if ( file_exists( ABSPATH . "/export_$this->name.xml" ) ) {
+			unlink( ABSPATH . "/export_$this->name.xml" );
 		}
 
-		$title    = get_option( 'nt_feed_title' );
-		$site_url = get_option( 'nt_feed_url' );
-		$desc     = get_option( 'nt_feed_description' );
+		$title    = get_option( "nt_feed_title_$this->name" );
+		$site_url = get_option( "nt_feed_url_$this->name" );
+		$desc     = get_option( "nt_feed_description_$this->name" );
 
 		$xml->flush(); // wyczyszczenie bufora
 
@@ -119,7 +119,7 @@ class Facebook extends Export {
 		$xml->endElement();
 		$xml->endDocument();
 
-		file_put_contents( ABSPATH . '/export_facebook.xml', $xml->flush() );
+		file_put_contents( ABSPATH . "/export_$this->name.xml", $xml->flush() );
 
 		delete_option( '_nt_export_' . $this->name );
 		delete_option( '_nt_export_part_' . $this->name );
