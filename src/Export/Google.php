@@ -29,9 +29,9 @@ class Google extends Export {
 		$xml->writeElement( 'link', $site_url );
 		$xml->writeElement( 'description', $desc );
 
-		$export_directory = WP_CONTENT_DIR . '/uploads/integration/' . $this->name . '/';
+		$export_directory = WP_CONTENT_DIR . "/uploads/integration/$this->name/";
 		for ( $i = 0; $i < $part_count; $i ++ ) {
-			$export_filename = 'part_' . $i . '.xml';
+			$export_filename = "part_$i.xml";
 			$xml->writeRaw( file_get_contents( $export_directory . $export_filename ) );
 		}
 
@@ -41,8 +41,8 @@ class Google extends Export {
 
 		file_put_contents( ABSPATH . "/export_$this->name.xml", $xml->flush() );
 
-		delete_option( '_nt_export_' . $this->name );
-		delete_option( '_nt_export_part_' . $this->name );
+		delete_option( "_nt_export_$this->name" );
+		delete_option( "_nt_export_part_$this->name" );
 	}
 
 	protected function parse_product_xml( $product, $product_id, XMLWriter $xml ): void {
@@ -75,11 +75,11 @@ class Google extends Export {
 			$xml->endElement();
 
 			if ( ! empty( $product_data['price'] ) ) {
-				$product_data['price'] = sprintf( '%.02f PLN', $product_data['price'] );
+				$product_data['price'] = sprintf( '%.02f %s', $product_data['price'], $product_data['currency'] );
 			}
 
 			if ( ! empty( $product_data['sale_price'] ) ) {
-				$product_data['sale_price'] = sprintf( '%.02f PLN', $product_data['sale_price'] );
+				$product_data['sale_price'] = sprintf( '%.02f %s', $product_data['sale_price'], $product_data['currency'] );
 			}
 
 			$xml->writeElementNs( 'g', 'price', null, $product_data['price'] );
@@ -128,9 +128,9 @@ class Google extends Export {
 				}
 				$xml->startElementNs( 'g', 'shipping', null );
 				{
-					$xml->writeElementNs( 'g', 'country', null, 'PL' );
+					$xml->writeElementNs( 'g', 'country', null, $product_data['country'] );
 					$xml->writeElementNs( 'g', 'service', null, $service );
-					$xml->writeElementNs( 'g', 'price', null, sprintf( '%.02f PLN', $min ) );
+					$xml->writeElementNs( 'g', 'price', null, sprintf( '%.02f %s', $min, $product_data['currency'] ) );
 				}
 				$xml->endElement();
 			}

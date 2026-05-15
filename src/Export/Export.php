@@ -136,6 +136,9 @@ abstract class Export {
 		$product_type = $product->get_type();
 		$is_variation = ( $product_type === 'variation' );
 
+		$currency    = get_woocommerce_currency();
+		$site_locale = explode( '_', get_locale() )[1] ?? '';
+
 		$sku              = $product->get_sku();
 		$ean              = $product->get_global_unique_id();
 		$product_name     = $product->get_name();
@@ -172,7 +175,7 @@ abstract class Export {
 		$brands    = $this->get_brand_array_by_id( $brand_ids );
 
 		$product_real_price = ( $product_sale_price > 0 ) ? $product_sale_price : $product_price;
-		$costs              = $this->calculate_shipping_costs( $product, $product_real_price );
+		$costs              = $this->calculate_shipping_costs( $product, $product_real_price, $site_locale );
 
 		if ( $is_variation ) {
 			$parent_id = $product->get_parent_id();
@@ -226,6 +229,8 @@ abstract class Export {
 			'image_link'       => $image_link,
 			'gallery'          => $gallery,
 			'costs'            => $costs,
+			'currency'         => $currency,
+			'country'          => $site_locale,
 		], $product, $product_id );
 	}
 
@@ -243,7 +248,7 @@ abstract class Export {
 		}
 	}
 
-	protected function calculate_shipping_costs( $product, $price ): array {
+	protected function calculate_shipping_costs( $product, $price, $country ): array {
 		$costs   = [];
 		$package = [
 			'contents'      => [
@@ -257,7 +262,7 @@ abstract class Export {
 				]
 			],
 			'destination'   => [
-				'country'  => 'PL',
+				'country'  => $country,
 				'state'    => '',
 				'postcode' => '',
 			],
@@ -267,7 +272,7 @@ abstract class Export {
 		$shipping                  = WC()->shipping->calculate_shipping_for_package( $package );
 		$excluded_shipping_methods = apply_filters( 'netivo/woocommerce/feed/excluded_shipping_methods', [], $product );
 
-		foreach ( $shipping['rates'] as $shiping => $shipping_rate ) {
+		foreach ( $shipping['rates'] as $shipping => $shipping_rate ) {
 			$shipping_label      = $shipping_rate->get_label();
 			$shipping_id         = $shipping_rate->get_id();
 			$shipping_meta       = $shipping_rate->get_meta_data();
