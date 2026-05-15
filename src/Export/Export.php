@@ -15,6 +15,12 @@ abstract class Export {
 
 	public function start(): void {
 		global $wpdb;
+		$enabled_exports = get_option( 'nt_feed_enabled_types' );
+		if ( ! in_array( $this->name, $enabled_exports ) ) {
+			echo 'Export not enabled <br />';
+			exit;
+		}
+
 		$current_export = get_option( '_nt_export_' . $this->name );
 
 		if ( ! empty( $current_export ) ) {
@@ -60,7 +66,11 @@ abstract class Export {
 
 		echo 'Exporting part ' . $part . '<br />';
 
-		$excluded_product_ids = apply_filters( 'netivo/woocommerce/feed/excluded_product_ids', [] );
+		$excluded_product_ids = apply_filters( 'netivo/woocommerce/feed/excluded_product_ids', [], $this->name );
+
+		if ( ! is_array( $excluded_product_ids ) ) {
+			$excluded_product_ids = [ $excluded_product_ids ];
+		}
 
 		foreach ( $products as $index => $product_id ) {
 			if ( in_array( $product_id[0], $excluded_product_ids ) ) {
@@ -125,10 +135,12 @@ abstract class Export {
 		return $terms;
 	}
 
-	//TODO: Add filters
 	protected function get_data_for_product( WC_Product $product, string|int $product_id ): array {
 		$product_type = $product->get_type();
 		$is_variation = ( $product_type === 'variation' );
+
+		$currency    = get_woocommerce_currency();
+		$site_locale = explode( '_', get_locale() )[1] ?? '';
 
 		$sku              = $product->get_sku();
 		$ean              = $product->get_global_unique_id();
@@ -166,7 +178,7 @@ abstract class Export {
 		$brands    = $this->get_brand_array_by_id( $brand_ids );
 
 		$product_real_price = ( $product_sale_price > 0 ) ? $product_sale_price : $product_price;
-		$costs              = $this->calculate_shipping_costs( $product, $product_real_price );
+		$costs              = $this->calculate_shipping_costs( $product, $product_real_price, $site_locale );
 
 		if ( $is_variation ) {
 			$parent_id = $product->get_parent_id();
@@ -220,7 +232,9 @@ abstract class Export {
 			'image_link'       => $image_link,
 			'gallery'          => $gallery,
 			'costs'            => $costs,
-		], $product, $product_id );
+			'currency'         => $currency,
+			'country'          => $site_locale,
+		], $product, $product_id, $this->name );
 	}
 
 	protected function prepare_parts_directory( $parts_directory ): void {
@@ -237,7 +251,7 @@ abstract class Export {
 		}
 	}
 
-	protected function calculate_shipping_costs( $product, $price ): array {
+	protected function calculate_shipping_costs( $product, $price, $country ): array {
 		$costs   = [];
 		$package = [
 			'contents'      => [
@@ -251,7 +265,7 @@ abstract class Export {
 				]
 			],
 			'destination'   => [
-				'country'  => 'PL',
+				'country'  => $country,
 				'state'    => '',
 				'postcode' => '',
 			],
@@ -259,9 +273,13 @@ abstract class Export {
 		];
 
 		$shipping                  = WC()->shipping->calculate_shipping_for_package( $package );
-		$excluded_shipping_methods = apply_filters( 'netivo/woocommerce/feed/excluded_shipping_methods', [], $product );
+		$excluded_shipping_methods = apply_filters( 'netivo/woocommerce/feed/excluded_shipping_methods', [], $product, $this->name );
 
-		foreach ( $shipping['rates'] as $shiping => $shipping_rate ) {
+		if ( ! is_array( $excluded_shipping_methods ) ) {
+			$excluded_shipping_methods = [ $excluded_shipping_methods ];
+		}
+
+		foreach ( $shipping['rates'] as $shipping => $shipping_rate ) {
 			$shipping_label      = $shipping_rate->get_label();
 			$shipping_id         = $shipping_rate->get_id();
 			$shipping_meta       = $shipping_rate->get_meta_data();

@@ -43,7 +43,7 @@ class Facebook extends Export {
 			}
 			$xml->endElement();
 
-			$xml->writeElementNs( 'g', 'price', null, sprintf( '%.2f PLN', $product_data['price'] ) );
+			$xml->writeElementNs( 'g', 'price', null, sprintf( '%.2f %s', $product_data['price'], $product_data['currency'] ) );
 			$xml->writeElementNs( 'g', 'image_link', null, $product_data['image_link'] );
 
 			if ( ! empty( $product_data['gallery'] ) ) {
@@ -77,9 +77,9 @@ class Facebook extends Export {
 				}
 				$xml->startElementNs( 'g', 'shipping', null );
 				{
-					$xml->writeElementNs( 'g', 'country', null, 'PL' );
+					$xml->writeElementNs( 'g', 'country', null, $product_data['country'] );
 					$xml->writeElementNs( 'g', 'service', null, $service );
-					$xml->writeElementNs( 'g', 'price', null, sprintf( '%.02f PLN', $min ) );
+					$xml->writeElementNs( 'g', 'price', null, sprintf( '%.02f %s', $min, $product_data['currency'] ) );
 				}
 				$xml->endElement();
 			}
@@ -88,13 +88,13 @@ class Facebook extends Export {
 	}
 
 	protected function finish( XMLWriter $xml, string|int $part_count ): void {
-		if ( file_exists( ABSPATH . '/export_facebook.xml' ) ) {
-			unlink( ABSPATH . '/export_facebook.xml' );
+		if ( file_exists( ABSPATH . "/export_$this->name.xml" ) ) {
+			unlink( ABSPATH . "/export_$this->name.xml" );
 		}
 
-		$title    = get_option( 'nt_feed_title' );
-		$site_url = get_option( 'nt_feed_url' );
-		$desc     = get_option( 'nt_feed_description' );
+		$title    = get_option( "nt_feed_title_$this->name" );
+		$site_url = get_option( "nt_feed_url_$this->name" );
+		$desc     = get_option( "nt_feed_description_$this->name" );
 
 		$xml->flush(); // wyczyszczenie bufora
 
@@ -109,9 +109,9 @@ class Facebook extends Export {
 		$xml->writeElement( 'link', $site_url );
 		$xml->writeElement( 'description', $desc );
 
-		$export_directory = WP_CONTENT_DIR . '/uploads/integration/' . $this->name . '/';
+		$export_directory = WP_CONTENT_DIR . "/uploads/integration/$this->name/";
 		for ( $i = 0; $i < $part_count; $i ++ ) {
-			$export_filename = 'part_' . $i . '.xml';
+			$export_filename = "part_$i.xml";
 			$xml->writeRaw( file_get_contents( $export_directory . $export_filename ) );
 		}
 
@@ -119,9 +119,9 @@ class Facebook extends Export {
 		$xml->endElement();
 		$xml->endDocument();
 
-		file_put_contents( ABSPATH . '/export_facebook.xml', $xml->flush() );
+		file_put_contents( ABSPATH . "/export_$this->name.xml", $xml->flush() );
 
-		delete_option( '_nt_export_' . $this->name );
-		delete_option( '_nt_export_part_' . $this->name );
+		delete_option( "_nt_export_$this->name" );
+		delete_option( "_nt_export_part_$this->name" );
 	}
 }
