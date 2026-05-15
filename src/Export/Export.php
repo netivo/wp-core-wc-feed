@@ -66,7 +66,7 @@ abstract class Export {
 
 		echo 'Exporting part ' . $part . '<br />';
 
-		$excluded_product_ids = apply_filters( 'netivo/woocommerce/feed/excluded_product_ids', [] );
+		$excluded_product_ids = apply_filters( 'netivo/woocommerce/feed/excluded_product_ids', [], $this->name );
 
 		foreach ( $products as $index => $product_id ) {
 			if ( in_array( $product_id[0], $excluded_product_ids ) ) {
@@ -231,7 +231,7 @@ abstract class Export {
 			'costs'            => $costs,
 			'currency'         => $currency,
 			'country'          => $site_locale,
-		], $product, $product_id );
+		], $product, $product_id, $this->name );
 	}
 
 	protected function prepare_parts_directory( $parts_directory ): void {
@@ -270,7 +270,7 @@ abstract class Export {
 		];
 
 		$shipping                  = WC()->shipping->calculate_shipping_for_package( $package );
-		$excluded_shipping_methods = apply_filters( 'netivo/woocommerce/feed/excluded_shipping_methods', [], $product );
+		$excluded_shipping_methods = apply_filters( 'netivo/woocommerce/feed/excluded_shipping_methods', [], $product, $this->name );
 
 		foreach ( $shipping['rates'] as $shipping => $shipping_rate ) {
 			$shipping_label      = $shipping_rate->get_label();
