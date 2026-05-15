@@ -68,6 +68,10 @@ abstract class Export {
 
 		$excluded_product_ids = apply_filters( 'netivo/woocommerce/feed/excluded_product_ids', [], $this->name );
 
+		if ( ! is_array( $excluded_product_ids ) ) {
+			$excluded_product_ids = [ $excluded_product_ids ];
+		}
+
 		foreach ( $products as $index => $product_id ) {
 			if ( in_array( $product_id[0], $excluded_product_ids ) ) {
 				unset( $products_array[ $index ] );
@@ -131,7 +135,6 @@ abstract class Export {
 		return $terms;
 	}
 
-	//TODO: Add filters
 	protected function get_data_for_product( WC_Product $product, string|int $product_id ): array {
 		$product_type = $product->get_type();
 		$is_variation = ( $product_type === 'variation' );
@@ -271,6 +274,10 @@ abstract class Export {
 
 		$shipping                  = WC()->shipping->calculate_shipping_for_package( $package );
 		$excluded_shipping_methods = apply_filters( 'netivo/woocommerce/feed/excluded_shipping_methods', [], $product, $this->name );
+
+		if ( ! is_array( $excluded_shipping_methods ) ) {
+			$excluded_shipping_methods = [ $excluded_shipping_methods ];
+		}
 
 		foreach ( $shipping['rates'] as $shipping => $shipping_rate ) {
 			$shipping_label      = $shipping_rate->get_label();

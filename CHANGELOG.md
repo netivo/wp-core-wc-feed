@@ -1,5 +1,10 @@
 # Changelog
 
+## Version 1.0.12
+
+- Refine admin settings labels.
+- Validate array structures in export logic.
+
 ## Version 1.0.11
 
 - Generalize feed settings logic:

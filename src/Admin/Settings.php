@@ -46,12 +46,12 @@ class Settings {
 			$enabled_types = get_option( 'nt_feed_enabled_types', [] );
 			$settings      = [
 				[
-					'title' => __( 'Typy feedów', 'netivo' ),
+					'title' => __( 'Feedy produktowe', 'netivo' ),
 					'type'  => 'title',
 					'id'    => 'nt_feed_types',
 				],
 				[
-					'title'   => __( 'Typy feedów', 'netivo' ),
+					'title'   => __( 'Włączone feedy', 'netivo' ),
 					'type'    => 'multiselect',
 					'id'      => 'nt_feed_enabled_types',
 					'options' => [
