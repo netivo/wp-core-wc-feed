@@ -1,5 +1,9 @@
 # Changelog
 
+## Version 1.1.1
+
+- Add default setting for enabled export types.
+
 ## Version 1.1.0
 
 - Refine admin settings labels.
